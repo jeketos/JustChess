@@ -15,6 +15,8 @@ class GameViewModel {
 
     val boardState = MutableStateFlow(Board())
 
+    val turnState = MutableStateFlow(Turn(color = GameColor.White))
+
     init {
         boardState.update {
             it.copy(cells = it.cells.map { column ->
@@ -42,27 +44,38 @@ class GameViewModel {
         return cell.copy(figure = figure)
     }
 
-    fun onCellClick(cell: Cell) {
-        println("on cell clicked")
+    fun onCellClick(clickedCell: Cell) {
         val selected = boardState.value.cells.flatten().find { it.selected }
-        if (selected?.figure != null) {
-            val canMove = selected.figure.canMove(selected, cell, boardState.value)
-            println("canMove - $canMove")
-            if (canMove) {
-                update(selected.copy(selected = false, figure = null))
-                update(cell.copy(figure = selected.figure.copy(selected.figure.moveCount + 1)))
+        when {
+            clickedCell.figure != null && clickedCell.figure.color != turnState.value.color && selected == null -> {}
+            clickedCell.figure?.color == turnState.value.color -> {
+                update(selected?.copy(selected = false))
+                update(clickedCell.copy(selected = true))
             }
-            //can move logic
-        } else if (cell.figure != null) {
-            update(cell.copy(selected = true))
+            selected?.figure != null -> {
+                processFigureMoving(selected.figure, selected, clickedCell)
+            }
+            clickedCell.figure != null -> update(clickedCell.copy(selected = true))
         }
     }
 
-    private fun update(new: Cell) = scope.launch {
+    private fun processFigureMoving(figure: Figure, selected: Cell, clickedCell: Cell) {
+        val canMove = figure.canMove(selected, clickedCell, boardState.value)
+        println("canMove - $canMove")
+        if (canMove) {
+            update(selected.copy(selected = false, figure = null))
+            update(clickedCell.copy(figure = figure.copy(figure.moveCount + 1)))
+            turnState.update {
+                it.copy(color = it.color.toggle())
+            }
+        }
+    }
+
+    private fun update(new: Cell?) = scope.launch {
         boardState.update {
-            it.copy(cells = it.cells.map {
-                it.map { cell ->
-                if (cell.position == new.position && cell.name == new.name) new
+            it.copy(cells = it.cells.map { cells ->
+                cells.map { cell ->
+                if (cell.position == new?.position && cell.name == new.name) new
                 else cell
                 }
             })

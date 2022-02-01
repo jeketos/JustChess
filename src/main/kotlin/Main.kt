@@ -13,38 +13,41 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import game.GameViewModel
 import game.data.Cell
 import game.data.render
-import kotlinx.coroutines.flow.collect
 
 @Composable
 @Preview
 fun App(viewModel: GameViewModel) {
 
-
     val board by viewModel.boardState.collectAsState()
+    val turn by viewModel.turnState.collectAsState()
 
-    LaunchedEffect("new") {
-        viewModel.boardState.collect {
-            println("board received - $board")
-        }
-    }
-    println("board redraw - $board")
     MaterialTheme {
-        Column {
-            board.cells.forEach {
-                Row {
-                    it.forEach {
-                        CellContent(it) { cell ->
-                            viewModel.onCellClick(cell)
+        Row {
+            Column {
+                board.cells.forEach {
+                    Row {
+                        it.forEach {
+                            CellContent(it) { cell ->
+                                viewModel.onCellClick(cell)
+                            }
                         }
                     }
                 }
             }
+
+            Text(
+                modifier = Modifier.align(Alignment.CenterVertically).padding(start = 16.dp),
+                fontSize = 26.sp,
+                text = "${turn.color.name} turn"
+            )
         }
+
     }
 }
 

@@ -23,7 +23,7 @@ data class Cell(
 //    }
 }
 
-enum class CellName(val id: String, val y: Int) {
+enum class CellName(val id: String, val x: Int) {
     A("A", 0),
     B("B", 1),
     C("C", 2),
@@ -33,7 +33,7 @@ enum class CellName(val id: String, val y: Int) {
     G("G", 6),
     H("H", 7);
 
-    operator fun plus(y: Int): CellName? = values().find { this.y + y == it.y }
+    operator fun plus(x: Int): CellName? = values().find { this.x + x == it.x }
 }
 
 fun CellName.color(position: Int): GameColor {

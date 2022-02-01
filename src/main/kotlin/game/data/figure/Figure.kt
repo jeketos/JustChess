@@ -1,5 +1,6 @@
 package game.data.figure
 
+import game.data.Board
 import game.data.Cell
 import game.data.GameColor
 import game.data.Point
@@ -15,7 +16,7 @@ abstract class Figure(
         moveCount: Int = this.moveCount
     ): Figure
 
-    open fun canMove(from: Cell, to: Cell): Boolean {
+    open fun canMove(from: Cell, to: Cell, board: Board): Boolean {
         if (to.figure?.color == color) return false
 
         return movePossibilities.any {
@@ -34,49 +35,52 @@ class Pawn(
 ) {
 
     private val attackPossibilities: List<Point> =
-        when (color) {
-            GameColor.Black -> listOf(Point(1, -1), Point(-1, -1))
-            GameColor.White -> listOf(Point(1, 1), Point(-1, 1))
-        }
+        listOf(Point(1, 1.colorMoveDirection()), Point(-1, 1.colorMoveDirection()))
 
     override val movePossibilities: List<Point> =
         if (moveCount == 0) {
-            when (color) {
-                GameColor.Black -> listOf(Point( 0, -1), Point(0, -2))
-                GameColor.White -> listOf(Point(0, 1), Point(0, 2))
-            }
+            listOf(Point(x = 0, y = 1.colorMoveDirection()), Point(x = 0, y = 2.colorMoveDirection()))
         } else {
-            when (color) {
-                GameColor.Black -> listOf(Point(0, -1))
-                GameColor.White -> listOf(Point(0, 1))
-            }
+            listOf(Point(0, 1.colorMoveDirection()))
         }
 
-    override fun canMove(from: Cell, to: Cell): Boolean {
+    override fun canMove(from: Cell, to: Cell, board: Board): Boolean {
         println("to: ${to.name} ${to.position}")
         val figureColor = to.figure?.color
         if (figureColor == color) return false
 
-        return if (figureColor != null) {
-            println("calculating attack possibilities")
-            attackPossibilities.any {
-                val moveToName = from.name + it.x
-                val moveToPosition = from.position + it.y
-                println("$moveToName $moveToPosition")
-                moveToName == to.name && moveToPosition == to.position
+        val previousCell = board.cellsFlatten.find { it.name == to.name && it.position == to.position - 1.colorMoveDirection() }
+        println("pawnCell - $previousCell")
+        return when {
+            previousCell?.figure is Pawn && previousCell.figure.moveCount == 1 && canAttack(from, to) -> true // TODO: modify board somehow
+            figureColor != null -> canAttack(from, to)
+
+            else -> {
+                movePossibilities.any {
+                    (from.name + it.x) == to.name && from.position + it.y == to.position
+                } && (previousCell?.figure == null || previousCell.figure == this)
             }
-        } else {
-            movePossibilities.any {
-                (from.name + it.x) == to.name && from.position + it.y == to.position
-            }
+
         }
 
+    }
 
+    private fun canAttack(from: Cell, to: Cell) = attackPossibilities.any {
+        val moveToName = from.name + it.x
+        val moveToPosition = from.position + it.y
+        println("$moveToName $moveToPosition")
+        moveToName == to.name && moveToPosition == to.position
     }
 
     override fun copy(moveCount: Int): Figure {
         return Pawn(color, moveCount)
     }
+
+    private fun Int.colorMoveDirection(): Int =
+        when (color) {
+            GameColor.Black -> this.unaryMinus()
+            GameColor.White -> this.unaryPlus()
+        }
 
 }
 
@@ -214,10 +218,6 @@ class King(
             Point(-1, 1),
             Point(-1, -1),
         )
-
-    override fun canMove(from: Cell, to: Cell): Boolean {
-        return super.canMove(from, to)
-    }
 
     override fun copy(moveCount: Int): King {
         return King(color, moveCount)

@@ -46,7 +46,7 @@ class GameViewModel {
         println("on cell clicked")
         val selected = boardState.value.cells.flatten().find { it.selected }
         if (selected?.figure != null) {
-            val canMove = selected.figure.canMove(selected, cell)
+            val canMove = selected.figure.canMove(selected, cell, boardState.value)
             println("canMove - $canMove")
             if (canMove) {
                 update(selected.copy(selected = false, figure = null))

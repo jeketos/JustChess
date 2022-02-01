@@ -14,7 +14,9 @@ data class Board(
             }
         }
     }
-)
+) {
+    val cellsFlatten = cells.flatten()
+}
 
 class BoardSize(
     val width: Int,

@@ -9,7 +9,7 @@ abstract class Figure(
     val color: GameColor,
     val image: String
 ) {
-    abstract fun movePossibilities(): List<Point>
+    abstract val movePossibilities: List<Point>
 
     abstract fun copy(
         moveCount: Int = this.moveCount
@@ -18,7 +18,7 @@ abstract class Figure(
     open fun canMove(from: Cell, to: Cell): Boolean {
         if (to.figure?.color == color) return false
 
-        return movePossibilities().any {
+        return movePossibilities.any {
             (from.name + it.x) == to.name && from.position + it.y == to.position
         }
     }
@@ -39,7 +39,7 @@ class Pawn(
             GameColor.White -> listOf(Point(1, 1), Point(-1, 1))
         }
 
-    override fun movePossibilities(): List<Point> =
+    override val movePossibilities: List<Point> =
         if (moveCount == 0) {
             when (color) {
                 GameColor.Black -> listOf(Point( 0, -1), Point(0, -2))
@@ -66,7 +66,7 @@ class Pawn(
                 moveToName == to.name && moveToPosition == to.position
             }
         } else {
-            movePossibilities().any {
+            movePossibilities.any {
                 (from.name + it.x) == to.name && from.position + it.y == to.position
             }
         }
@@ -89,7 +89,7 @@ class Rook(
     image = color.image("rookWhite.png", "rookBlack.png")
 ) {
 
-    override fun movePossibilities(): List<Point> =
+    override val movePossibilities: List<Point> =
         List(7) {
             Point(it + 1, 0)
         } + List(7) {
@@ -115,7 +115,7 @@ class Bishop(
     image = color.image("bishopWhite.png", "bishopBlack.png")
 ) {
 
-    override fun movePossibilities(): List<Point> =
+    override val movePossibilities: List<Point> =
         List(7) {
             Point(it + 1, it + 1)
         } + List(7) {
@@ -141,7 +141,7 @@ class Knight(
     image = color.image("knightWhite.png", "knightBlack.png")
 ) {
 
-    override fun movePossibilities(): List<Point> =
+    override val movePossibilities: List<Point> =
         listOf(
             Point(1, 2),
             Point(2, 1),
@@ -168,7 +168,7 @@ class Queen(
     image = color.image("queenWhite.png", "queenBlack.png")
 ) {
 
-    override fun movePossibilities(): List<Point> =
+    override val movePossibilities: List<Point> =
         List(7) {
             Point(it + 1, 0)
         } + List(7) {
@@ -203,7 +203,7 @@ class King(
     image = color.image("kingWhite.png", "kingBlack.png")
 ) {
 
-    override fun movePossibilities(): List<Point> =
+    override val movePossibilities: List<Point> =
         listOf(
             Point(0, 1),
             Point(0, -1),

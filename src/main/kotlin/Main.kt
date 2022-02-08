@@ -32,9 +32,13 @@ fun App(viewModel: GameViewModel) {
             Column {
                 board.cells.forEach {
                     Row {
-                        it.forEach {
-                            CellContent(it) { cell ->
-                                viewModel.onCellClick(cell)
+                        it.forEach { cell ->
+                            CellContent(
+                                cell = cell,
+                                selected = cell.id == board.selectedCell?.id,
+                                highlighted = board.movePossibilities?.any { it.cellToMove.id == cell.id} ?: false
+                            ) { clickedCell ->
+                                viewModel.onCellClick(clickedCell)
                             }
                         }
                     }
@@ -54,6 +58,8 @@ fun App(viewModel: GameViewModel) {
 @Composable
 fun CellContent(
     cell: Cell,
+    selected: Boolean,
+    highlighted: Boolean,
     onClick: (Cell) -> Unit,
 ) {
     Box(modifier = Modifier.size(64.dp).background(cell.color.render()).clickable {
@@ -61,7 +67,7 @@ fun CellContent(
         }) {
         Text(
             modifier = Modifier.align(Alignment.Center),
-            text = cell.name.id + cell.position,
+            text = cell.name.id + cell.number,
             color = Color.Green,
             textAlign = TextAlign.Center
         )
@@ -72,8 +78,11 @@ fun CellContent(
                 contentDescription = it.toString()
             )
         }
-        if (cell.selected) {
+        if (selected) {
             Box(modifier = Modifier.fillMaxSize().background(Color.Green.copy(alpha = 0.3f)))
+        }
+        if (highlighted) {
+            Box(modifier = Modifier.fillMaxSize().background(Color.Blue.copy(alpha = 0.3f)))
         }
     }
 

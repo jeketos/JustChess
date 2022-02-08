@@ -21,11 +21,11 @@ class GameViewModel {
         boardState.update {
             it.copy(cells = it.cells.map { column ->
                 column.map { cell ->
-                    when (cell.position) {
-                        2 -> cell.copy(figure = Pawn(GameColor.White))
-                        7 -> cell.copy(figure = Pawn(GameColor.Black))
-                        1 -> initFigures(cell, GameColor.White)
-                        8 -> initFigures(cell, GameColor.Black)
+                    when (cell.number.y) {
+                        1 -> cell.copy(figure = Pawn(GameColor.White))
+                        6 -> cell.copy(figure = Pawn(GameColor.Black))
+//                        0 -> initFigures(cell, GameColor.White)
+//                        7 -> initFigures(cell, GameColor.Black)
                         else -> cell
                     }
                 }
@@ -34,51 +34,79 @@ class GameViewModel {
     }
 
     private fun initFigures(cell: Cell, color: GameColor): Cell {
-        val figure = when (cell.name) {
-            CellName.A, CellName.H -> Rook(color)
-            CellName.B, CellName.G -> Knight(color)
-            CellName.C, CellName.F -> Bishop(color)
-            CellName.D -> Queen(color)
-            CellName.E -> King(color)
-        }
-        return cell.copy(figure = figure)
+//        val figure = when (cell.name) {
+//            CellName.A, CellName.H -> Rook(color)
+//            CellName.B, CellName.G -> Knight(color)
+//            CellName.C, CellName.F -> Bishop(color)
+//            CellName.D -> Queen(color)
+//            CellName.E -> King(color)
+//        }
+        return cell
+//            .copy(figure = figure)
     }
 
     fun onCellClick(clickedCell: Cell) {
-        val selected = boardState.value.cells.flatten().find { it.selected }
+        val selected = boardState.value.selectedCell
+
         when {
             clickedCell.figure != null && clickedCell.figure.color != turnState.value.color && selected == null -> {}
             clickedCell.figure?.color == turnState.value.color -> {
-                update(selected?.copy(selected = false))
-                update(clickedCell.copy(selected = true))
+                update(
+                    selected = clickedCell,
+                    movePossibilities = clickedCell.figure.calculatePossibleMoves(clickedCell, boardState.value)
+                )
             }
             selected?.figure != null -> {
                 processFigureMoving(selected.figure, selected, clickedCell)
             }
-            clickedCell.figure != null -> update(clickedCell.copy(selected = true))
+            clickedCell.figure != null -> update(
+                selected = clickedCell,
+                movePossibilities = clickedCell.figure.calculatePossibleMoves(clickedCell, boardState.value)
+            ) // could be removed
         }
     }
 
     private fun processFigureMoving(figure: Figure, selected: Cell, clickedCell: Cell) {
-        val canMove = figure.canMove(selected, clickedCell, boardState.value)
-        println("canMove - $canMove")
-        if (canMove) {
-            update(selected.copy(selected = false, figure = null))
-            update(clickedCell.copy(figure = figure.copy(figure.moveCount + 1)))
+        val movePossibilities = boardState.value.movePossibilities ?: return
+        println(
+            "movePossibilities - ${
+                movePossibilities.map { it.cellToMove }.joinToString(", ") { "${it.name} ${it.number}" }
+            }"
+        )
+        if (movePossibilities.any { it.cellToMove == clickedCell }) {
+            update(
+                modifiedCells = listOfNotNull(
+                    selected.copy(figure = null),
+                    clickedCell.copy(figure = figure.copy(figure.moveCount + 1)),
+                    boardState.value.movePossibilities
+                    ?.firstOrNull { it.cellToAttack != null  && clickedCell.id == it.cellToAttack.id }
+                        ?.cellToAttack?.copy(figure = null)
+                ),
+                selected = null,
+                movePossibilities = null
+
+            )
             turnState.update {
                 it.copy(color = it.color.toggle())
             }
         }
     }
 
-    private fun update(new: Cell?) = scope.launch {
+    private fun update(
+        modifiedCells: List<Cell>? = null,
+        selected: Cell? = null,
+        movePossibilities: List<AttackedCell>? = null
+    ) = scope.launch {
         boardState.update {
-            it.copy(cells = it.cells.map { cells ->
-                cells.map { cell ->
-                if (cell.position == new?.position && cell.name == new.name) new
-                else cell
-                }
-            })
+            it.copy(
+                cells = it.cells.map { cells ->
+                    cells.map { cell ->
+                        modifiedCells?.find { modified -> cell.id == modified.id } ?: cell
+                    }
+                },
+                selectedCell = selected,
+                movePossibilities = movePossibilities
+            )
         }
     }
 }

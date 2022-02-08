@@ -54,9 +54,14 @@ class Pawn(
                     board.cellsFlatten.find { it.name == name && it.number == number }
                 }.mapNotNull { attack ->
                     val previousCell = board.cellsFlatten.find { it.name == attack.name && it.number == attack.number - 1.colorMoveDirection() }
+                    val couldAttackPawnOnEmptyCell = previousCell?.figure is Pawn &&
+                            previousCell.figure.moveCount == 1 &&
+                            attack.name == previousCell.name &&
+                            (previousCell.number == CellNumber.N4 || previousCell.number == CellNumber.N5) &&
+                            previousCell.figure.color != color
                     when {
                         attack.figure != null && attack.figure.color != color -> AttackedCell(cellToMove = attack, cellToAttack = null)
-                        previousCell?.figure is Pawn && previousCell.figure.moveCount == 1 && previousCell.figure.color != color -> AttackedCell(cellToMove = attack, cellToAttack = previousCell)
+                        couldAttackPawnOnEmptyCell -> AttackedCell(cellToMove = attack, cellToAttack = previousCell)
                         else -> null
                     }
                 }.also {

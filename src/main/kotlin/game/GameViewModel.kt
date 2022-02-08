@@ -70,7 +70,7 @@ class GameViewModel {
         val movePossibilities = boardState.value.movePossibilities ?: return
         println(
             "movePossibilities - ${
-                movePossibilities.map { it.cellToMove }.joinToString(", ") { "${it.name} ${it.number}" }
+                movePossibilities.map { it.cellToMove }.joinToString(", ") { "${it.name}${it.number}" }
             }"
         )
         if (movePossibilities.any { it.cellToMove == clickedCell }) {
@@ -78,8 +78,7 @@ class GameViewModel {
                 modifiedCells = listOfNotNull(
                     selected.copy(figure = null),
                     clickedCell.copy(figure = figure.copy(figure.moveCount + 1)),
-                    boardState.value.movePossibilities
-                    ?.firstOrNull { it.cellToAttack != null  && clickedCell.id == it.cellToAttack.id }
+                    boardState.value.movePossibilities?.firstOrNull { it.cellToAttack != null }
                         ?.cellToAttack?.copy(figure = null)
                 ),
                 selected = null,

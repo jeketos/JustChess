@@ -13,7 +13,23 @@ abstract class Figure(
         moveCount: Int = this.moveCount
     ): Figure
 
-    abstract fun calculatePossibleMoves(currentCell: Cell, board: Board): List<AttackedCell>
+    open fun calculatePossibleMoves(currentCell: Cell, board: Board): List<AttackedCell> =
+        movePossibilities.flatMap { listOfPoints ->
+        val points = listOfPoints.mapNotNull { point ->
+            val name = (currentCell.name + point.x) ?: return@mapNotNull null
+            val number = (currentCell.number + point.y) ?: return@mapNotNull null
+            board.cellsFlatten.find { it.name == name && it.number == number }
+        }
+        val figureIndex = points.indexOfFirst { it.figure != null }
+        val take = when {
+            figureIndex == -1 -> points.size
+            points[figureIndex].figure?.color == color -> figureIndex
+            else -> figureIndex + 1
+        }
+        points.take(take)
+    }.map {
+        AttackedCell(cellToMove = it, cellToAttack = null)
+    }
 }
 
 class Pawn(
@@ -116,148 +132,132 @@ class Rook(
             }
         )
 
-    override fun calculatePossibleMoves(currentCell: Cell, board: Board): List<AttackedCell> =
-        movePossibilities.flatMap { listOfPoints ->
-            val points = listOfPoints.mapNotNull { point ->
-                val name = (currentCell.name + point.x) ?: return@mapNotNull null
-                val number = (currentCell.number + point.y) ?: return@mapNotNull null
-                board.cellsFlatten.find { it.name == name && it.number == number }
-            }
-            val figureIndex = points.indexOfFirst { it.figure != null }
-            val take = when {
-                figureIndex == -1 -> points.size
-                points[figureIndex].figure?.color == color -> figureIndex
-                else -> figureIndex + 1
-            }
-            points.take(take)
-        }.map {
-            AttackedCell(cellToMove = it, cellToAttack = null)
-        }
-
-
     override fun copy(moveCount: Int): Rook {
         return Rook(color, moveCount)
     }
 
 }
 
-//
-//class Bishop(
-//    color: GameColor,
-//    moveCount: Int = 0
-//) : Figure(
-//    moveCount = moveCount,
-//    color = color,
-//    image = color.image("bishopWhite.png", "bishopBlack.png")
-//) {
-//
-//    override val movePossibilities: List<Point> =
-//        List(7) {
-//            Point(it + 1, it + 1)
-//        } + List(7) {
-//            Point((it + 1).unaryMinus(), it + 1)
-//        } + List(7) {
-//            Point(it + 1, (it + 1).unaryMinus())
-//        } + List(7) {
-//            Point((it + 1).unaryMinus(), (it + 1).unaryMinus())
-//        }
-//
-//    override fun copy(moveCount: Int): Bishop {
-//        return Bishop(color, moveCount)
-//    }
-//
-//}
-//
-//class Knight(
-//    color: GameColor,
-//    moveCount: Int = 0
-//) : Figure(
-//    moveCount = moveCount,
-//    color = color,
-//    image = color.image("knightWhite.png", "knightBlack.png")
-//) {
-//
-//    override val movePossibilities: List<Point> =
-//        listOf(
-//            Point(1, 2),
-//            Point(2, 1),
-//            Point(2, -1),
-//            Point(1, -2),
-//            Point(-1, -2),
-//            Point(-2, -1),
-//            Point(-2, 1),
-//            Point(-1, 2),
-//        )
-//
-//    override fun copy(moveCount: Int): Knight {
-//        return Knight(color, moveCount)
-//    }
-//
-//}
-//
-//class Queen(
-//    color: GameColor,
-//    moveCount: Int = 0
-//) : Figure(
-//    moveCount = moveCount,
-//    color = color,
-//    image = color.image("queenWhite.png", "queenBlack.png")
-//) {
-//
-//    override val movePossibilities: List<Point> =
-//        List(7) {
-//            Point(it + 1, 0)
-//        } + List(7) {
-//            Point(0, it + 1)
-//        } + List(7) {
-//            Point((it + 1).unaryMinus(), 0)
-//        } + List(7) {
-//            Point(0, (it + 1).unaryMinus())
-//        } + List(7) {
-//            Point(it + 1, it + 1)
-//        } + List(7) {
-//            Point((it + 1).unaryMinus(), it + 1)
-//        } + List(7) {
-//            Point(it + 1, (it + 1).unaryMinus())
-//        } + List(7) {
-//            Point((it + 1).unaryMinus(), (it + 1).unaryMinus())
-//        }
-//
-//    override fun copy(moveCount: Int): Queen {
-//        return Queen(color, moveCount)
-//    }
-//
-//}
-//
-//
-//class King(
-//    color: GameColor,
-//    moveCount: Int = 0
-//) : Figure(
-//    moveCount = moveCount,
-//    color = color,
-//    image = color.image("kingWhite.png", "kingBlack.png")
-//) {
-//
-//    override val movePossibilities: List<Point> =
-//        listOf(
-//            Point(0, 1),
-//            Point(0, -1),
-//            Point(1, 0),
-//            Point(1, 1),
-//            Point(1, -1),
-//            Point(-1, 0),
-//            Point(-1, 1),
-//            Point(-1, -1),
-//        )
-//
-//    override fun copy(moveCount: Int): King {
-//        return King(color, moveCount)
-//    }
-//
-//}
-//
-//
+class Bishop(
+    color: GameColor,
+    moveCount: Int = 0
+) : Figure(
+    moveCount = moveCount,
+    color = color,
+    image = color.image("bishopWhite.png", "bishopBlack.png")
+) {
+
+    override val movePossibilities: List<List<Point>> = listOf(
+        List(7) {
+            Point(it + 1, it + 1)
+        },
+        List(7) {
+            Point((it + 1).unaryMinus(), it + 1)
+        },
+        List(7) {
+            Point(it + 1, (it + 1).unaryMinus())
+        },
+        List(7) {
+            Point((it + 1).unaryMinus(), (it + 1).unaryMinus())
+        }
+    )
+
+    override fun copy(moveCount: Int): Bishop {
+        return Bishop(color, moveCount)
+    }
+
+}
+
+class Knight(
+    color: GameColor,
+    moveCount: Int = 0
+) : Figure(
+    moveCount = moveCount,
+    color = color,
+    image = color.image("knightWhite.png", "knightBlack.png")
+) {
+
+    override val movePossibilities: List<List<Point>> =
+        listOf(
+            listOf(Point(1, 2)),
+            listOf(Point(2, 1)),
+            listOf(Point(2, -1)),
+            listOf(Point(1, -2)),
+            listOf(Point(-1, -2)),
+            listOf(Point(-2, -1)),
+            listOf(Point(-2, 1)),
+            listOf(Point(-1, 2)),
+        )
+
+    override fun copy(moveCount: Int): Knight {
+        return Knight(color, moveCount)
+    }
+
+}
+
+class Queen(
+    color: GameColor,
+    moveCount: Int = 0
+) : Figure(
+    moveCount = moveCount,
+    color = color,
+    image = color.image("queenWhite.png", "queenBlack.png")
+) {
+
+    override val movePossibilities: List<List<Point>> = listOf(
+        List(7) {
+            Point(it + 1, 0)
+        }, List(7) {
+            Point(0, it + 1)
+        }, List(7) {
+            Point((it + 1).unaryMinus(), 0)
+        }, List(7) {
+            Point(0, (it + 1).unaryMinus())
+        }, List(7) {
+            Point(it + 1, it + 1)
+        }, List(7) {
+            Point((it + 1).unaryMinus(), it + 1)
+        }, List(7) {
+            Point(it + 1, (it + 1).unaryMinus())
+        }, List(7) {
+            Point((it + 1).unaryMinus(), (it + 1).unaryMinus())
+        }
+    )
+
+    override fun copy(moveCount: Int): Queen {
+        return Queen(color, moveCount)
+    }
+
+}
+
+
+class King(
+    color: GameColor,
+    moveCount: Int = 0
+) : Figure(
+    moveCount = moveCount,
+    color = color,
+    image = color.image("kingWhite.png", "kingBlack.png")
+) {
+
+    override val movePossibilities: List<List<Point>> = listOf(
+            listOf(Point(0, 1)),
+            listOf(Point(0, -1)),
+            listOf(Point(1, 0)),
+            listOf(Point(1, 1)),
+            listOf(Point(1, -1)),
+            listOf(Point(-1, 0)),
+            listOf(Point(-1, 1)),
+            listOf(Point(-1, -1)),
+        )
+
+    override fun copy(moveCount: Int): King {
+        return King(color, moveCount)
+    }
+
+}
+
+
 fun GameColor.image(white: String, black: String) = when (this) {
     GameColor.White -> white
     GameColor.Black -> black

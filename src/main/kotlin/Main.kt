@@ -82,7 +82,8 @@ fun CellContent(
             Box(modifier = Modifier.fillMaxSize().background(Color.Green.copy(alpha = 0.3f)))
         }
         if (highlighted) {
-            Box(modifier = Modifier.fillMaxSize().background(Color.Blue.copy(alpha = 0.3f)))
+            val highlightColor = if (cell.figure != null) Color.Red.copy(alpha = 0.3f) else Color.Blue.copy(alpha = 0.3f)
+            Box(modifier = Modifier.fillMaxSize().background(highlightColor))
         }
     }
 

@@ -36,11 +36,10 @@ class GameViewModel {
     private fun initFigures(cell: Cell, color: GameColor): Cell {
         val figure = when (cell.name) {
             CellName.A, CellName.H -> Rook(color)
-            else -> null
-//            CellName.B, CellName.G -> Knight(color)
-//            CellName.C, CellName.F -> Bishop(color)
-//            CellName.D -> Queen(color)
-//            CellName.E -> King(color)
+            CellName.B, CellName.G -> Knight(color)
+            CellName.C, CellName.F -> Bishop(color)
+            CellName.D -> Queen(color)
+            CellName.E -> King(color)
         }
         return cell .copy(figure = figure)
     }

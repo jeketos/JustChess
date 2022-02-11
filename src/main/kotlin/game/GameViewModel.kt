@@ -21,11 +21,11 @@ class GameViewModel {
         boardState.update {
             it.copy(cells = it.cells.map { column ->
                 column.map { cell ->
-                    when (cell.number.y) {
-                        1 -> cell.copy(figure = Pawn(GameColor.White))
-                        6 -> cell.copy(figure = Pawn(GameColor.Black))
-//                        0 -> initFigures(cell, GameColor.White)
-//                        7 -> initFigures(cell, GameColor.Black)
+                    when (cell.number) {
+                        CellNumber.N2 -> cell.copy(figure = Pawn(GameColor.White))
+                        CellNumber.N7 -> cell.copy(figure = Pawn(GameColor.Black))
+                        CellNumber.N1 -> initFigures(cell, GameColor.White)
+                        CellNumber.N8 -> initFigures(cell, GameColor.Black)
                         else -> cell
                     }
                 }
@@ -34,15 +34,15 @@ class GameViewModel {
     }
 
     private fun initFigures(cell: Cell, color: GameColor): Cell {
-//        val figure = when (cell.name) {
-//            CellName.A, CellName.H -> Rook(color)
+        val figure = when (cell.name) {
+            CellName.A, CellName.H -> Rook(color)
+            else -> null
 //            CellName.B, CellName.G -> Knight(color)
 //            CellName.C, CellName.F -> Bishop(color)
 //            CellName.D -> Queen(color)
 //            CellName.E -> King(color)
-//        }
-        return cell
-//            .copy(figure = figure)
+        }
+        return cell .copy(figure = figure)
     }
 
     fun onCellClick(clickedCell: Cell) {

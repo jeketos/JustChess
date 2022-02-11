@@ -53,14 +53,18 @@ class Pawn(
                     val number = (currentCell.number + point.y) ?: return@mapNotNull null
                     board.cellsFlatten.find { it.name == name && it.number == number }
                 }.mapNotNull { attack ->
-                    val previousCell = board.cellsFlatten.find { it.name == attack.name && it.number == attack.number - 1.colorMoveDirection() }
+                    val previousCell =
+                        board.cellsFlatten.find { it.name == attack.name && it.number == attack.number - 1.colorMoveDirection() }
                     val couldAttackPawnOnEmptyCell = previousCell?.figure is Pawn &&
                             previousCell.figure.moveCount == 1 &&
                             attack.name == previousCell.name &&
                             (previousCell.number == CellNumber.N4 || previousCell.number == CellNumber.N5) &&
                             previousCell.figure.color != color
                     when {
-                        attack.figure != null && attack.figure.color != color -> AttackedCell(cellToMove = attack, cellToAttack = null)
+                        attack.figure != null && attack.figure.color != color -> AttackedCell(
+                            cellToMove = attack,
+                            cellToAttack = null
+                        )
                         couldAttackPawnOnEmptyCell -> AttackedCell(cellToMove = attack, cellToAttack = previousCell)
                         else -> null
                     }
@@ -74,34 +78,6 @@ class Pawn(
             }")
         }
     }
-//
-//    private fun canAttack(from: Cell, to: Cell) = attackPossibilities.any {
-//        val moveToName = from.name + it.x
-//        val moveToPosition = from.position + it.y
-//        println("$moveToName $moveToPosition")
-//        moveToName == to.name && moveToPosition == to.position
-//    }
-//
-//    override fun canMove(from: Cell, to: Cell, board: Board): Boolean {
-//        println("to: ${to.name} ${to.position}")
-//        val figureColor = to.figure?.color
-//        if (figureColor == color) return false
-//
-//        val previousCell = board.cellsFlatten.find { it.name == to.name && it.position == to.position - 1.colorMoveDirection() }
-//        println("pawnCell - $previousCell")
-//        return when {
-//            previousCell?.figure is Pawn && previousCell.figure.moveCount == 1 && canAttack(from, to) -> true // TODO: modify board somehow
-//            figureColor != null -> canAttack(from, to)
-//
-//            else -> {
-//                movePossibilities.any {
-//                    (from.name + it.x) == to.name && from.position + it.y == to.position
-//                } && (previousCell?.figure == null || previousCell.figure == this)
-//            }
-//
-//        }
-//
-//    }
 
     override fun copy(moveCount: Int): Figure {
         return Pawn(color, moveCount)
@@ -114,41 +90,57 @@ class Pawn(
         }
 
 }
-//
-//class Rook(
-//    color: GameColor,
-//    moveCount: Int = 0
-//) : Figure(
-//    moveCount = moveCount,
-//    color = color,
-//    image = color.image("rookWhite.png", "rookBlack.png")
-//) {
-//
-//    override val movePossibilities: List<List<Point>> =
-//        listOf(
-//            List(7) {
-//                Point(it + 1, 0)
-//            },
-//            List(7) {
-//                Point(0, it + 1)
-//            },
-//            List(7) {
-//                Point((it + 1).unaryMinus(), 0)
-//            },
-//            List(7) {
-//                Point(0, (it + 1).unaryMinus())
-//            }
-//        )
-//
-//    override fun calculatePossibleMoves(cell: Cell, board: Board): List<Cell> {
-//
-//    }
-//
-//    override fun copy(moveCount: Int): Rook {
-//        return Rook(color, moveCount)
-//    }
-//
-//}
+
+class Rook(
+    color: GameColor,
+    moveCount: Int = 0
+) : Figure(
+    moveCount = moveCount,
+    color = color,
+    image = color.image("rookWhite.png", "rookBlack.png")
+) {
+
+    override val movePossibilities: List<List<Point>> =
+        listOf(
+            List(7) {
+                Point(it + 1, 0)
+            },
+            List(7) {
+                Point(0, it + 1)
+            },
+            List(7) {
+                Point((it + 1).unaryMinus(), 0)
+            },
+            List(7) {
+                Point(0, (it + 1).unaryMinus())
+            }
+        )
+
+    override fun calculatePossibleMoves(currentCell: Cell, board: Board): List<AttackedCell> =
+        movePossibilities.flatMap { listOfPoints ->
+            val points = listOfPoints.mapNotNull { point ->
+                val name = (currentCell.name + point.x) ?: return@mapNotNull null
+                val number = (currentCell.number + point.y) ?: return@mapNotNull null
+                board.cellsFlatten.find { it.name == name && it.number == number }
+            }
+            val figureIndex = points.indexOfFirst { it.figure != null }
+            val take = when {
+                figureIndex == -1 -> points.size
+                points[figureIndex].figure?.color == color -> figureIndex
+                else -> figureIndex + 1
+            }
+            points.take(take)
+        }.map {
+            AttackedCell(cellToMove = it, cellToAttack = null)
+        }
+
+
+    override fun copy(moveCount: Int): Rook {
+        return Rook(color, moveCount)
+    }
+
+}
+
 //
 //class Bishop(
 //    color: GameColor,

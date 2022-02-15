@@ -15,7 +15,7 @@ data class Board(
         }
     },
     val selectedCell: Cell? = null,
-    val movePossibilities: List<AttackedCell>? = null
+    val movePossibilities: List<FigureMoving>? = null
 ) {
     val cellsFlatten = cells.flatten()
 }

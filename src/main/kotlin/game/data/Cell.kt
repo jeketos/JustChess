@@ -11,11 +11,6 @@ data class Cell(
     val id: String = name.toString() + number.toString()
 }
 
-data class AttackedCell(
-    val cellToMove: Cell,
-    val cellToAttack: Cell?
-)
-
 enum class CellName(val id: String, val x: Int) {
     A("A", 0),
     B("B", 1),

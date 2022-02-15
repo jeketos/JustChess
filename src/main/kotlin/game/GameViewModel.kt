@@ -73,12 +73,34 @@ class GameViewModel {
             }"
         )
         if (movePossibilities.any { it.cellToMove == clickedCell }) {
+            val pawnCellUpdates = boardState.value.movePossibilities
+                ?.filterIsInstance<FigureMoving.Pawn>()
+                ?.firstOrNull()
+                ?.takeIf {
+                    it.cellToMove.name == clickedCell.name && it.cellToMove.number == clickedCell.number
+                }
+                ?.attackedCell?.copy(figure = null)
+            val kingCellUpdates = boardState.value.movePossibilities
+                ?.filterIsInstance<FigureMoving.King>()
+                ?.firstOrNull()
+                ?.takeIf {
+                    it.cellToMove.name == clickedCell.name && it.cellToMove.number == clickedCell.number
+                }
+                ?.let {
+                    println("selected ${selected.name}${selected.number}, king ${it.cellToMove.name}${it.cellToMove.number}")
+                    val rook = it.rookCell?.figure
+                    listOfNotNull(
+                        it.rookCell?.copy(figure = null),
+                        it.castlingCell?.copy(figure = rook)
+                    ).toTypedArray()
+                } ?: emptyArray()
+
             update(
                 modifiedCells = listOfNotNull(
                     selected.copy(figure = null),
                     clickedCell.copy(figure = figure.copy(figure.moveCount + 1)),
-                    boardState.value.movePossibilities?.firstOrNull { it.cellToAttack != null }
-                        ?.cellToAttack?.copy(figure = null)
+                    pawnCellUpdates,
+                    *kingCellUpdates
                 ),
                 selected = null,
                 movePossibilities = null
@@ -93,7 +115,7 @@ class GameViewModel {
     private fun update(
         modifiedCells: List<Cell>? = null,
         selected: Cell? = null,
-        movePossibilities: List<AttackedCell>? = null
+        movePossibilities: List<FigureMoving>? = null
     ) = scope.launch {
         boardState.update {
             it.copy(

@@ -13,7 +13,7 @@ abstract class Figure(
         moveCount: Int = this.moveCount
     ): Figure
 
-    open fun calculatePossibleMoves(currentCell: Cell, board: Board): List<AttackedCell> =
+    open fun calculatePossibleMoves(currentCell: Cell, board: Board): List<FigureMoving> =
         movePossibilities.flatMap { listOfPoints ->
         val points = listOfPoints.mapNotNull { point ->
             val name = (currentCell.name + point.x) ?: return@mapNotNull null
@@ -28,7 +28,7 @@ abstract class Figure(
         }
         points.take(take)
     }.map {
-        AttackedCell(cellToMove = it, cellToAttack = null)
+        FigureMoving.Default(cellToMove = it)
     }
 }
 
@@ -52,7 +52,7 @@ class Pawn(
         }
     )
 
-    override fun calculatePossibleMoves(currentCell: Cell, board: Board): List<AttackedCell> {
+    override fun calculatePossibleMoves(currentCell: Cell, board: Board): List<FigureMoving> {
         return movePossibilities.flatMap { list ->
             list.mapNotNull { point ->
                 val name = (currentCell.name + point.x) ?: return@mapNotNull null
@@ -62,7 +62,7 @@ class Pawn(
                 cell.figure == null
             }.map {
                 println("map movePossibilities- ${it.id}")
-                AttackedCell(cellToMove = it, cellToAttack = null)
+                FigureMoving.Default(cellToMove = it)
             }.plus(
                 attackPossibilities.mapNotNull { point ->
                     val name = (currentCell.name + point.x) ?: return@mapNotNull null
@@ -77,15 +77,12 @@ class Pawn(
                             (previousCell.number == CellNumber.N4 || previousCell.number == CellNumber.N5) &&
                             previousCell.figure.color != color
                     when {
-                        attack.figure != null && attack.figure.color != color -> AttackedCell(
-                            cellToMove = attack,
-                            cellToAttack = null
-                        )
-                        couldAttackPawnOnEmptyCell -> AttackedCell(cellToMove = attack, cellToAttack = previousCell)
+                        attack.figure != null && attack.figure.color != color -> FigureMoving.Default(cellToMove = attack)
+                        couldAttackPawnOnEmptyCell -> FigureMoving.Pawn(cellToMove = attack, attackedCell = previousCell)
                         else -> null
                     }
                 }.also {
-                    println("map attackPossibilities- ${it.joinToString(", ") { "${it.cellToMove.id} ${it.cellToAttack?.id}" }}")
+                    println("map attackPossibilities- ${it.joinToString(", ") { it.cellToMove.id }}")
                 }
             )
         }.also { attacked ->
@@ -253,6 +250,39 @@ class King(
 
     override fun copy(moveCount: Int): King {
         return King(color, moveCount)
+    }
+
+    override fun calculatePossibleMoves(currentCell: Cell, board: Board): List<FigureMoving> {
+        val calculatePossibleMoves = super.calculatePossibleMoves(currentCell, board)
+
+        val rookCell = next(currentCell, Point(3, 0), board)
+        val nextCell = next(currentCell, Point(1, 0), board)
+        val cellAfterNext = next(currentCell, Point(2, 0), board)
+        val isKingAbleForCastlingToRight = moveCount == 0 && nextCell!!.figure == null &&
+                cellAfterNext!!.figure == null &&
+                rookCell!!.figure is Rook && rookCell.figure!!.moveCount == 0
+
+        val rookLeftCell = next(currentCell, Point(-4, 0), board)
+        val nextLeftCell = next(currentCell, Point(-1, 0), board)
+        val cellLeftAfterNext = next(currentCell, Point(-2, 0), board)
+        val cellLeftDoubleAfterNext = next(currentCell, Point(-3, 0), board)
+
+        val isKingAbleForCastlingToLeft = moveCount == 0 && nextLeftCell!!.figure == null &&
+                cellLeftAfterNext!!.figure == null &&
+                cellLeftDoubleAfterNext!!.figure == null &&
+                rookLeftCell!!.figure is Rook && rookLeftCell.figure!!.moveCount == 0
+
+        return when {
+            isKingAbleForCastlingToRight -> calculatePossibleMoves + FigureMoving.King(cellAfterNext!!, rookCell, nextCell)
+            isKingAbleForCastlingToLeft -> calculatePossibleMoves + FigureMoving.King(cellLeftAfterNext!!, rookLeftCell, nextLeftCell)
+            else -> calculatePossibleMoves
+        }
+    }
+
+    private fun next(currentCell: Cell, point: Point, board: Board): Cell? {
+        val name = (currentCell.name + point.x) ?: return null
+        val number = (currentCell.number + point.y) ?: return null
+        return board.cellsFlatten.find { it.name == name && it.number == number }
     }
 
 }

@@ -132,16 +132,16 @@ class GameViewModel {
 
             )
             turnState.update {
+                val color = it.color.toggle()
                 it.copy(
-                    color = it.color.toggle(),
-                    gameCondition = getGameCondition()
+                    color = color,
+                    gameCondition = getGameCondition(color)
                 )
             }
         }
     }
 
-    private fun getGameCondition(): GameCondition {
-        val gameColor = turnState.value.color.toggle()
+    private fun getGameCondition(gameColor: GameColor): GameCondition {
         val board = boardState.value
         val kingCell = board.cellsFlatten.first { it.figure is King && it.figure.color == gameColor }
         val underAttack = kingCell.isUnderAttack(gameColor, board)
@@ -150,7 +150,11 @@ class GameViewModel {
             .flatMap {
                 calculateMovePossibilities(it.figure!!, it, board)
             }
+        val pawnCell = board.cellsFlatten
+            .filter { it.figure is Pawn && it.figure.color == turnState.value.color }
+            .find { it.number == CellNumber.N8 || it.number == CellNumber.N1 }
         return when {
+            pawnCell != null -> GameCondition.Mutation(pawnCell, turnState.value.color)
             underAttack && allPossibleMoves.isEmpty() -> GameCondition.Mate
             allPossibleMoves.isEmpty() -> GameCondition.Stalemate
             underAttack -> GameCondition.Check
@@ -173,5 +177,25 @@ class GameViewModel {
                 movePossibilities = movePossibilities
             )
         }
+
+    fun onMutationSelected(selected: Cell, figure: Figure) {
+        boardState.update {
+            it.copy(
+                cells = it.cells.map { cells ->
+                    cells.map { cell ->
+                        if (cell.id == selected.id) cell.copy(figure = figure)
+                        else cell
+                    }
+                },
+                selectedCell = null,
+                movePossibilities = null
+            )
+        }
+        turnState.update {
+            it.copy(
+                gameCondition = getGameCondition(it.color)
+            )
+        }
+    }
 
 }

@@ -1,4 +1,3 @@
-// Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 import androidx.compose.material.MaterialTheme
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
@@ -18,9 +17,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import game.GameViewModel
-import game.data.Cell
-import game.data.GameCondition
-import game.data.render
+import game.data.*
+import game.data.figure.*
 
 @Composable
 @Preview
@@ -49,7 +47,8 @@ fun App(viewModel: GameViewModel) {
 
             Box(modifier = Modifier.fillMaxHeight().weight(1f)) {
                 Column(Modifier.align(Alignment.Center)) {
-                    val text = when(turn.gameCondition) {
+                    val text = when(val gameCondition = turn.gameCondition) {
+                        is GameCondition.Mutation -> "${gameCondition.color}'s Pawn Mutation"
                         GameCondition.Check -> "${turn.color.name} turn, CHECK!"
                         GameCondition.Mate -> "GAME OVER, ${turn.color.name}`s CHECK & MATE!"
                         GameCondition.Stalemate ->  "GAME OVER, STALEMATE!"
@@ -70,9 +69,32 @@ fun App(viewModel: GameViewModel) {
                         Text(text = "New game")
                     }
                 }
-
             }
+        }
 
+        val mutation = turn.gameCondition as? GameCondition.Mutation
+        if (mutation != null) {
+            Box(
+                modifier = Modifier.fillMaxSize().background(color = Color(0x44000000)).clickable {  }
+            ) {
+                Row(modifier = Modifier.align(Alignment.Center)) {
+                    val color = mutation.color
+                    listOf(
+                        Cell(CellName.A, CellNumber.N1, color, Knight(color)),
+                        Cell(CellName.A, CellNumber.N1, color, Bishop(color)),
+                        Cell(CellName.A, CellNumber.N1, color, Rook(color)),
+                        Cell(CellName.A, CellNumber.N1, color, Queen(color)),
+                    ).forEach {
+                        CellContent(
+                            cell = it,
+                            selected = false,
+                            highlighted = false
+                        ) { cell ->
+                            viewModel.onMutationSelected(mutation.cell, cell.figure!!)
+                        }
+                    }
+                }
+            }
         }
 
     }

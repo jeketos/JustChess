@@ -9,7 +9,21 @@ data class Cell(
     val figure: Figure? = null
 ) {
     val id: String = name.toString() + number.toString()
+
+    override fun toString(): String {
+        return id
+    }
 }
+
+fun Cell.isUnderAttack(defendingColor: GameColor, board: Board): Boolean =
+    board.cellsFlatten.filter { it.figure != null && it.figure.color != defendingColor }
+        .flatMap { cell ->
+            cell.figure!!.calculatePossibleMoves(cell, board)
+        }
+        .firstOrNull {
+            it.cellToMove.id == this.id
+        } != null
+
 
 enum class CellName(val id: String, val x: Int) {
     A("A", 0),

@@ -13,23 +13,27 @@ abstract class Figure(
         moveCount: Int = this.moveCount
     ): Figure
 
-    open fun calculatePossibleMoves(currentCell: Cell, board: Board): List<FigureMoving> =
-        movePossibilities.flatMap { listOfPoints ->
-        val points = listOfPoints.mapNotNull { point ->
-            val name = (currentCell.name + point.x) ?: return@mapNotNull null
-            val number = (currentCell.number + point.y) ?: return@mapNotNull null
-            board.cellsFlatten.find { it.name == name && it.number == number }
+    open fun calculatePossibleMoves(currentCell: Cell, board: Board): List<FigureMoving> {
+        val moves = movePossibilities.flatMap { listOfPoints ->
+            val points = listOfPoints.mapNotNull { point ->
+                val name = (currentCell.name + point.x) ?: return@mapNotNull null
+                val number = (currentCell.number + point.y) ?: return@mapNotNull null
+                board.cellsFlatten.find { it.name == name && it.number == number }
+            }
+            val figureIndex = points.indexOfFirst { it.figure != null }
+            val take = when {
+                figureIndex == -1 -> points.size
+                points[figureIndex].figure?.color == color -> figureIndex
+                else -> figureIndex + 1
+            }
+            points.take(take)
+        }.map {
+            FigureMoving.Default(cellToMove = it)
         }
-        val figureIndex = points.indexOfFirst { it.figure != null }
-        val take = when {
-            figureIndex == -1 -> points.size
-            points[figureIndex].figure?.color == color -> figureIndex
-            else -> figureIndex + 1
-        }
-        points.take(take)
-    }.map {
-        FigureMoving.Default(cellToMove = it)
+
+        return moves
     }
+
 }
 
 class Pawn(
@@ -61,7 +65,6 @@ class Pawn(
             }.filter { cell ->
                 cell.figure == null
             }.map {
-                println("map movePossibilities- ${it.id}")
                 FigureMoving.Default(cellToMove = it)
             }.plus(
                 attackPossibilities.mapNotNull { point ->
@@ -78,17 +81,14 @@ class Pawn(
                             previousCell.figure.color != color
                     when {
                         attack.figure != null && attack.figure.color != color -> FigureMoving.Default(cellToMove = attack)
-                        couldAttackPawnOnEmptyCell -> FigureMoving.Pawn(cellToMove = attack, attackedCell = previousCell)
+                        couldAttackPawnOnEmptyCell -> FigureMoving.Pawn(
+                            cellToMove = attack,
+                            attackedCell = previousCell
+                        )
                         else -> null
                     }
-                }.also {
-                    println("map attackPossibilities- ${it.joinToString(", ") { it.cellToMove.id }}")
                 }
             )
-        }.also { attacked ->
-            println("currentCell - ${currentCell.id}, movePossibilities - ${
-                attacked.map { it.cellToMove }.joinToString(", ") { "${it.name}${it.number}" }
-            }")
         }
     }
 
@@ -238,15 +238,15 @@ class King(
 ) {
 
     override val movePossibilities: List<List<Point>> = listOf(
-            listOf(Point(0, 1)),
-            listOf(Point(0, -1)),
-            listOf(Point(1, 0)),
-            listOf(Point(1, 1)),
-            listOf(Point(1, -1)),
-            listOf(Point(-1, 0)),
-            listOf(Point(-1, 1)),
-            listOf(Point(-1, -1)),
-        )
+        listOf(Point(0, 1)),
+        listOf(Point(0, -1)),
+        listOf(Point(1, 0)),
+        listOf(Point(1, 1)),
+        listOf(Point(1, -1)),
+        listOf(Point(-1, 0)),
+        listOf(Point(-1, 1)),
+        listOf(Point(-1, -1)),
+    )
 
     override fun copy(moveCount: Int): King {
         return King(color, moveCount)
@@ -273,8 +273,16 @@ class King(
                 rookLeftCell!!.figure is Rook && rookLeftCell.figure!!.moveCount == 0
 
         return when {
-            isKingAbleForCastlingToRight -> calculatePossibleMoves + FigureMoving.King(cellAfterNext!!, rookCell, nextCell)
-            isKingAbleForCastlingToLeft -> calculatePossibleMoves + FigureMoving.King(cellLeftAfterNext!!, rookLeftCell, nextLeftCell)
+            isKingAbleForCastlingToRight -> calculatePossibleMoves + FigureMoving.King(
+                cellAfterNext!!,
+                rookCell,
+                nextCell
+            )
+            isKingAbleForCastlingToLeft -> calculatePossibleMoves + FigureMoving.King(
+                cellLeftAfterNext!!,
+                rookLeftCell,
+                nextLeftCell
+            )
             else -> calculatePossibleMoves
         }
     }

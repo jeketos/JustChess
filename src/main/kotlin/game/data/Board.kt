@@ -28,6 +28,14 @@ fun Board.getFromCellByPoint(cell: Cell, point: Point): Cell? {
     }.getOrNull()
 }
 
+fun Board.update(modifiedCells: List<Cell>) = this.copy(
+    cells = cells.map { cells ->
+        cells.map { cell ->
+            modifiedCells.find { modified -> cell.id == modified.id } ?: cell
+        }
+    }
+)
+
 class BoardSize(
     val width: Int,
     val height: Int

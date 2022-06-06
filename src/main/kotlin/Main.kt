@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +19,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import game.GameViewModel
 import game.data.Cell
+import game.data.GameCondition
 import game.data.render
 
 @Composable
@@ -45,11 +47,32 @@ fun App(viewModel: GameViewModel) {
                 }
             }
 
-            Text(
-                modifier = Modifier.align(Alignment.CenterVertically).padding(start = 16.dp),
-                fontSize = 26.sp,
-                text = "${turn.color.name} turn"
-            )
+            Box(modifier = Modifier.fillMaxHeight().weight(1f)) {
+                Column(Modifier.align(Alignment.Center)) {
+                    val text = when(turn.gameCondition) {
+                        GameCondition.Check -> "${turn.color.name} turn, CHECK!"
+                        GameCondition.Mate -> "GAME OVER, ${turn.color.name}`s CHECK & MATE!"
+                        GameCondition.Stalemate ->  "GAME OVER, STALEMATE!"
+                        GameCondition.NothingSpecial -> "${turn.color.name} turn"
+                    }
+                    Text(
+                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(start = 16.dp),
+                        fontSize = 26.sp,
+                        textAlign = TextAlign.Center,
+                        text = text
+                    )
+                    Button(
+                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(start = 16.dp),
+                        onClick = {
+                            viewModel.startNewGame()
+                        }
+                    ) {
+                        Text(text = "New game")
+                    }
+                }
+
+            }
+
         }
 
     }

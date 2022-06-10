@@ -1,12 +1,29 @@
 package game.data.figure
 
 import game.data.*
+import game.util.toInt
+import kotlin.experimental.and
+import kotlin.experimental.or
 
 abstract class Figure(
     val moveCount: Int,
     val color: GameColor,
     val image: String
 ) {
+
+    object CompressedValue {
+        val Mask: Short = 0b0000_0_111_000_000_0
+        val Null: Short = 0b0000_0_000_000_000_0
+        val Pawn: Short = 0b0000_0_001_000_000_0
+        val Bishop: Short = 0b0000_0_010_000_000_0
+        val Knight: Short = 0b0000_0_011_000_000_0
+        val Rook: Short = 0b0000_0_100_000_000_0
+        val Queen: Short = 0b0000_0_101_000_000_0
+        val King: Short = 0b0000_0_110_000_000_0
+    }
+
+    abstract val name: String
+
     abstract val movePossibilities: List<List<Point>>
 
     abstract fun copy(
@@ -34,7 +51,38 @@ abstract class Figure(
         return moves
     }
 
+    override fun toString(): String =
+        "$name $color $moveCount"
+
 }
+
+fun Figure?.compressedValue(): Short =
+    when (this) {
+        is Pawn -> Figure.CompressedValue.Pawn
+        is Bishop -> Figure.CompressedValue.Bishop
+        is Knight -> Figure.CompressedValue.Knight
+        is Rook -> Figure.CompressedValue.Rook
+        is Queen -> Figure.CompressedValue.Queen
+        is King -> Figure.CompressedValue.King
+        else -> Figure.CompressedValue.Null
+    } or
+            this?.color.compressedValueForFigure() or
+            ((this?.moveCount ?: 0) > 0).toInt().shl(11).toShort()
+
+fun Short.decompressFigure(): Figure? {
+    val color = this.decompressFigureColor()
+    val moves = this.toInt().shr(11).and(1)
+    return when (this.and(Figure.CompressedValue.Mask)) {
+        Figure.CompressedValue.Pawn -> Pawn(color, moves)
+        Figure.CompressedValue.Bishop -> Bishop(color, moves)
+        Figure.CompressedValue.Knight -> Knight(color, moves)
+        Figure.CompressedValue.Rook -> Rook(color, moves)
+        Figure.CompressedValue.Queen -> Queen(color, moves)
+        Figure.CompressedValue.King -> King(color, moves)
+        else -> null
+    }
+}
+
 
 class Pawn(
     color: GameColor,
@@ -44,6 +92,8 @@ class Pawn(
     color = color,
     image = color.image("pawnWhite.png", "pawnBlack.png")
 ) {
+    override val name: String
+        get() = "Pawn"
 
     private val attackPossibilities: List<Point> =
         listOf(Point(1, 1.colorMoveDirection()), Point(-1, 1.colorMoveDirection()))
@@ -113,6 +163,9 @@ class Rook(
     image = color.image("rookWhite.png", "rookBlack.png")
 ) {
 
+    override val name: String
+        get() = "Rook"
+
     override val movePossibilities: List<List<Point>> =
         listOf(
             List(7) {
@@ -144,6 +197,9 @@ class Bishop(
     image = color.image("bishopWhite.png", "bishopBlack.png")
 ) {
 
+    override val name: String
+        get() = "Bishop"
+
     override val movePossibilities: List<List<Point>> = listOf(
         List(7) {
             Point(it + 1, it + 1)
@@ -174,6 +230,9 @@ class Knight(
     image = color.image("knightWhite.png", "knightBlack.png")
 ) {
 
+    override val name: String
+        get() = "Knight"
+
     override val movePossibilities: List<List<Point>> =
         listOf(
             listOf(Point(1, 2)),
@@ -200,6 +259,9 @@ class Queen(
     color = color,
     image = color.image("queenWhite.png", "queenBlack.png")
 ) {
+
+    override val name: String
+        get() = "Queen"
 
     override val movePossibilities: List<List<Point>> = listOf(
         List(7) {
@@ -236,6 +298,9 @@ class King(
     color = color,
     image = color.image("kingWhite.png", "kingBlack.png")
 ) {
+
+    override val name: String
+        get() = "King"
 
     override val movePossibilities: List<List<Point>> = listOf(
         listOf(Point(0, 1)),

@@ -1,5 +1,9 @@
 package game.data
 
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.util.*
+
 data class Board(
     val size: BoardSize = BoardSize(8, 8),
     val cells: List<List<Cell>> = size.let {
@@ -13,11 +17,18 @@ data class Board(
                 )
             }
         }
-    },
-    val selectedCell: Cell? = null,
-    val movePossibilities: List<FigureMoving>? = null
+    }
 ) {
     val cellsFlatten = cells.flatten()
+
+    override fun toString(): String {
+        return cellsFlatten.chunked(8)
+            .joinToString("\n") {
+                it.joinToString("\t|\t") { cell ->
+                    "$cell ${cell.color} ${cell.figure}${if (cell.figure == null) "\t\t" else ""}"
+                }
+            }
+    }
 }
 
 fun Board.getFromCellByPoint(cell: Cell, point: Point): Cell? {
@@ -36,22 +47,25 @@ fun Board.update(modifiedCells: List<Cell>) = this.copy(
     }
 )
 
+fun Board.compressToString(): String {
+    val buffer = ByteBuffer.allocate(128)
+    cellsFlatten.forEach {
+        val compress = it.compress()
+        buffer.putShort(compress)
+    }
+    val array = buffer.array()
+    return Base64.getUrlEncoder().encodeToString(array)
+}
+
+fun String.decompressBoard(): Board {
+    val array = Base64.getUrlDecoder().decode(this)
+    val rawData = ShortArray(array.size.div(2))
+    ByteBuffer.wrap(array).order(ByteOrder.BIG_ENDIAN).asShortBuffer().get(rawData)
+    val cells = rawData.map { it.decompressCell() }.chunked(8)
+    return Board(cells = cells)
+}
+
 class BoardSize(
     val width: Int,
     val height: Int
 )
-
-fun main() {
-    Board().apply {
-        println(cells.joinToString("\n") {
-            it.joinToString(" ") {
-                "${it.name.id}${it.number.alias}"
-            }
-        })
-        val cell = cells[0][0]
-        println("${cell.name.id}${cell.number.alias}")
-        getFromCellByPoint(cell, Point(1, 1))?.also {
-            println("${it.name.id}${it.number.alias}")
-        }
-    }
-}

@@ -12,13 +12,15 @@ import game.data.compressToString
 import game.data.figure.Figure
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
-class OnlineGameViewModel(val room: Room, val user: User) {
+class OnlineGameViewModel(
+    private val room: Room,
+    private val user: User
+) {
 
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
     private val gameController = GameController()
@@ -28,8 +30,17 @@ class OnlineGameViewModel(val room: Room, val user: User) {
     init {
         gameController.setStateByRoom(room, user, userColor)
         scope.launch(Dispatchers.IO) {
-            if (userColor == GameColor.Black) {
-                simulateWebSocket()
+            ApiClient.webSocketEvents(
+                roomUid = room.uid,
+                userUid = user.uid
+            ).collect {
+                when (it) {
+                    "Update" -> {
+                        val remoteRoom = ApiClient.getRoom(room.uid)
+                        gameController.setStateByRoom(remoteRoom, user, userColor)
+                    }
+                    else -> {}
+                }
             }
         }
         scope.launch(Dispatchers.IO) {
@@ -37,28 +48,19 @@ class OnlineGameViewModel(val room: Room, val user: User) {
                 it.turn
             }.distinctUntilChanged()
                 .collect { color ->
-                    println("#### color - $color, moveCount - ${gameState.value.moveCount}")
                     if (color != userColor && gameState.value.moveCount > 0) {
-                        println("#### userUid - ${user.uid}, room.uid - ${room.uid}")
-                        val room = ApiClient.makeMove(MoveRequest(userUid = user.uid, roomUid = room.uid, gameState.value.board.compressToString()))
+                        val room = ApiClient.makeMove(
+                            MoveRequest(
+                                userUid = user.uid,
+                                roomUid = room.uid,
+                                board = gameState.value.board.compressToString()
+                            )
+                        )
                         gameController.setStateByRoom(room, user, userColor)
-                        simulateWebSocket()
                     }
                 }
         }
     }
-
-    private suspend fun simulateWebSocket() {
-        delay(1000)
-        val remoteRoom = ApiClient.getRoom(room.uid)
-        if (remoteRoom.gameState.turn == user.uid) {
-            gameController.setStateByRoom(remoteRoom, user, userColor)
-            return
-        } else {
-            simulateWebSocket()
-        }
-    }
-
 
     fun onCellClick(clickedCell: Cell) {
         if (gameState.value.turn == userColor) {

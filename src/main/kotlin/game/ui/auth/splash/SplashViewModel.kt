@@ -17,6 +17,7 @@ class SplashViewModel {
 
     fun findGame() {
         scope.launch(Dispatchers.IO) {
+            //TODO add socket impl
             runCatching {
                 val user = ApiClient.signUp()
                 val room = ApiClient.findGame(user.uid)

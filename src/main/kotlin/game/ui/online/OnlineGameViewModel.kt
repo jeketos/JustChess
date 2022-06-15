@@ -8,6 +8,7 @@ import game.controller.GameController
 import game.controller.GameState
 import game.data.Cell
 import game.data.GameColor
+import game.data.SocketEvents
 import game.data.compressToString
 import game.data.figure.Figure
 import kotlinx.coroutines.CoroutineScope
@@ -35,7 +36,7 @@ class OnlineGameViewModel(
                 userUid = user.uid
             ).collect {
                 when (it) {
-                    "Update" -> {
+                    SocketEvents.Update -> {
                         val remoteRoom = ApiClient.getRoom(room.uid)
                         gameController.setStateByRoom(remoteRoom, user, userColor)
                     }
@@ -49,14 +50,13 @@ class OnlineGameViewModel(
             }.distinctUntilChanged()
                 .collect { color ->
                     if (color != userColor && gameState.value.moveCount > 0) {
-                        val room = ApiClient.makeMove(
+                        ApiClient.makeMove(
                             MoveRequest(
                                 userUid = user.uid,
                                 roomUid = room.uid,
                                 board = gameState.value.board.compressToString()
                             )
                         )
-                        gameController.setStateByRoom(room, user, userColor)
                     }
                 }
         }

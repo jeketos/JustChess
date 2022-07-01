@@ -46,8 +46,9 @@ class GameController {
     }
 
     fun onCellClick(clickedCell: Cell) {
-        val selected = gameState.value.selectedCell
+        if (gameState.value.gameCondition == GameCondition.Mate) return
 
+        val selected = gameState.value.selectedCell
         when {
             clickedCell.figure != null && clickedCell.figure.color != gameState.value.turn && selected == null -> {}
             clickedCell.figure?.color == gameState.value.turn -> {
@@ -94,10 +95,11 @@ class GameController {
         gameState.update {
             val decompressBoard = room.gameState.board.decompressBoard()
             val turn = if (room.gameState.turn == user.uid) userColor else userColor.toggle()
+            val looserColor = if (user.uid == room.gameState.winner) userColor.toggle() else userColor
             it.copy(
                 board = decompressBoard,
-                turn = turn,
-                gameCondition = getGameCondition(decompressBoard, turn),
+                turn = if (room.gameState.winner != null) looserColor else turn,
+                gameCondition = if (room.gameState.winner != null) GameCondition.Mate else getGameCondition(decompressBoard, turn),
                 selectedCell = null,
                 movePossibilities = null,
                 moveCount = room.gameState.movesCount

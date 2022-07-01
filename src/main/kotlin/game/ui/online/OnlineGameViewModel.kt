@@ -6,13 +6,11 @@ import game.api.response.Room
 import game.api.response.User
 import game.controller.GameController
 import game.controller.GameState
-import game.data.Cell
-import game.data.GameColor
-import game.data.SocketEvents
-import game.data.compressToString
+import game.data.*
 import game.data.figure.Figure
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -27,8 +25,16 @@ class OnlineGameViewModel(
     private val gameController = GameController()
     val userColor = if (room.players.eagle?.uid == user.uid) GameColor.White else GameColor.Black
     val gameState: StateFlow<GameState> = gameController.gameState
+    val closeEvent = MutableSharedFlow<Unit>()
 
     init {
+        scope.launch(Dispatchers.IO) {
+            gameState.collect {
+                if (it.gameCondition == GameCondition.Mate) {
+                    ApiClient.closeWebSocket()
+                }
+            }
+        }
         gameController.setStateByRoom(room, user, userColor)
         scope.launch(Dispatchers.IO) {
             ApiClient.webSocketEvents(
@@ -36,8 +42,13 @@ class OnlineGameViewModel(
             ).collect {
                 when (it) {
                     SocketEvents.Update -> {
-                        val remoteRoom = ApiClient.getRoom(room.uid)
-                        gameController.setStateByRoom(remoteRoom, user, userColor)
+                        runCatching {
+                            val remoteRoom = ApiClient.getRoom(room.uid)
+                            gameController.setStateByRoom(remoteRoom, user, userColor)
+                        }.onFailure {
+                            val achieved = ApiClient.getAchievedRoom(room.uid)
+                            gameController.setStateByRoom(achieved, user, userColor)
+                        }
                     }
                     else -> {}
                 }
@@ -72,8 +83,19 @@ class OnlineGameViewModel(
 
     fun giveUp() {
         scope.launch {
-            val room = ApiClient.giveUp()
-            //todo
+            ApiClient.giveUp()
+        }
+    }
+
+    fun onCloseClick() {
+        scope.launch {
+            runCatching {
+                if (gameState.value.gameCondition != GameCondition.Mate) {
+                    ApiClient.giveUp()
+                }
+                ApiClient.closeWebSocket()
+            }
+            closeEvent.emit(Unit)
         }
     }
 }

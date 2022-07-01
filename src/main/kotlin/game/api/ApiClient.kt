@@ -35,8 +35,9 @@ object ApiClient {
     private const val FIND_USER = "$PATH/v1/user/"
     private const val FIND_GAME = "$PATH/v1/findGame"
     private const val ROOMS = "$PATH/v1/rooms/"
+    private const val ACHIEVED_ROOMS = "$PATH/v1/rooms/achieved/"
     private const val MOVE = "$PATH/v1/makeMove"
-    private const val GIVE_UP = "$PATH/v1/giveUp/"
+    private const val GIVE_UP = "$PATH/v1/giveUp"
 
     private var token: String = ""
 
@@ -83,6 +84,8 @@ object ApiClient {
 
     suspend fun getRoom(uid: String): Room = get(ROOMS + uid)
 
+    suspend fun getAchievedRoom(uid: String): Room = get(ACHIEVED_ROOMS + uid)
+
     suspend fun makeMove(move: MoveRequest) {
         post<Room, MoveRequest>(MOVE, move)
     }
@@ -121,6 +124,7 @@ object ApiClient {
     }
 
     fun closeWebSocket() {
+        println("#### close web socket")
         webSocketClient?.close()
         webSocketClient = null
     }

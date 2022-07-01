@@ -22,8 +22,8 @@ fun Login(
     viewModel: LoginViewModel
 ) {
     val viewState by viewModel.state.collectAsState(CasualState.Idle)
-    val email = remember { mutableStateOf("") }
-    val password = remember { mutableStateOf("") }
+    val email = remember { mutableStateOf("v@v.v") }
+    val password = remember { mutableStateOf("111111") }
     LaunchedEffect(Unit) {
         viewModel.state.collect { state ->
             if (state is CasualState.Data) {

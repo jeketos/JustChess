@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -31,6 +32,11 @@ fun OnlineGame(
 
     val board = gameState.board
 
+    LaunchedEffect(Unit) {
+        viewModel.closeEvent.collect {
+            navController.popBackStack()
+        }
+    }
     MaterialTheme {
         Row {
             Column {
@@ -78,7 +84,9 @@ fun OnlineGame(
                 }
                 IconButton(
                     modifier = Modifier.align(Alignment.TopEnd).size(64.dp),
-                    onClick = { navController.popBackStack() }
+                    onClick = {
+                        viewModel.onCloseClick()
+                    }
                 ) {
                     Icon(
                         modifier = Modifier.padding(16.dp),

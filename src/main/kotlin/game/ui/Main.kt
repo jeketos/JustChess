@@ -8,6 +8,8 @@ import game.navigation.NavController
 import game.navigation.NavDestination
 import game.ui.auth.login.Login
 import game.ui.auth.login.LoginViewModel
+import game.ui.auth.signUp.SignUp
+import game.ui.auth.signUp.SignUpViewModel
 import game.ui.auth.splash.Splash
 import game.ui.auth.splash.SplashViewModel
 import game.ui.hotseat.HotSeat
@@ -21,6 +23,7 @@ fun main() = application {
         val destination by navController.currentDestination.collectAsState()
         when (val d = destination) {
             NavDestination.Splash -> Splash(navController = navController, viewModel = SplashViewModel())
+            NavDestination.SignUp -> SignUp(navController = navController, viewModel = SignUpViewModel())
             NavDestination.HotSeat -> HotSeat(viewModel = HotSeatGameViewModel(), navController = navController)
             NavDestination.Login -> Login(navController = navController, viewModel = LoginViewModel())
             is NavDestination.OnlinePlay -> OnlineGame(navController = navController, viewModel = OnlineGameViewModel(d.data, d.user))

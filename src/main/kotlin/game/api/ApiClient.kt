@@ -1,6 +1,9 @@
 package game.api
 
+import game.api.request.Credentials
 import game.api.request.MoveRequest
+import game.api.request.SignUpData
+import game.api.request.TokenWithUser
 import game.api.response.Room
 import game.api.response.User
 import game.data.SocketEvents
@@ -27,16 +30,19 @@ object ApiClient {
     private const val PORT = 8080
     private const val PROTOCOL = "http://"
     private const val PATH = "$PROTOCOL$HOST:$PORT/api"
-    private const val JOIN = "$PATH/v1/join"
+    private const val SIGN_UP = "$PATH/v1/signUp"
+    private const val LOGIN = "$PATH/v1/login"
     private const val FIND_USER = "$PATH/v1/user/"
-    private const val FIND_GAME = "$PATH/v1/findGame/"
+    private const val FIND_GAME = "$PATH/v1/findGame"
     private const val ROOMS = "$PATH/v1/rooms/"
     private const val MOVE = "$PATH/v1/makeMove"
     private const val GIVE_UP = "$PATH/v1/giveUp/"
 
+    private var token: String = ""
+
     private val client = HttpClient(CIO) {
         install(Logging) {
-            level = LogLevel.BODY
+            level = LogLevel.ALL
         }
         install(ContentNegotiation) {
             json(Json {
@@ -46,33 +52,44 @@ object ApiClient {
             })
         }
         install(WebSockets)
+        HttpResponseValidator {
+            validateResponse { response ->
+                if (response.status == HttpStatusCode.Unauthorized) {
+                    token = ""
+                }
+            }
+        }
     }
 
     private var webSocketClient: HttpClient? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val socketEvents: MutableSharedFlow<SocketEvents?> = MutableSharedFlow(1)
 
-    suspend fun signUp(): User = client.get(JOIN).body()
+    suspend fun signUp(data: SignUpData): User =
+        post<TokenWithUser, SignUpData>(SIGN_UP, data)
+            .also { token = it.token }
+            .user
 
-    suspend fun findUser(userUid: String): User = client.get(FIND_USER + userUid).body()
+    suspend fun login(data: Credentials): User =
+        post<TokenWithUser, Credentials>(LOGIN, data)
+            .also { token = it.token }
+            .user
 
-    suspend fun findGame(userUid: String): Room = client.get(FIND_GAME + userUid).body()
+    suspend fun findUser(): User = get(FIND_USER)
 
-    suspend fun getActiveRooms(): List<Room> = client.get(ROOMS).body()
+    suspend fun findGame(): Room = get(FIND_GAME)
 
-    suspend fun getRoom(uid: String): Room = client.get(ROOMS + uid).body()
+    suspend fun getActiveRooms(): List<Room> = get(ROOMS)
+
+    suspend fun getRoom(uid: String): Room = get(ROOMS + uid)
 
     suspend fun makeMove(move: MoveRequest) {
-        client.post(MOVE) {
-            accept(ContentType.Application.Json)
-            contentType(ContentType.Application.Json)
-            setBody(move)
-        }
+        post<Room, MoveRequest>(MOVE, move)
     }
 
-    suspend fun giveUp(userUid: String): Room = client.get(GIVE_UP + userUid).body()
+    suspend fun giveUp(): Room = get(GIVE_UP)
 
-    fun webSocketEvents(roomUid: String, userUid: String): SharedFlow<SocketEvents?> {
+    fun webSocketEvents(roomUid: String): SharedFlow<SocketEvents?> {
         scope.launch {
             if (webSocketClient == null || webSocketClient?.isActive == false) {
                 webSocketClient = HttpClient(CIO) {
@@ -85,8 +102,11 @@ object ApiClient {
                     port = PORT,
                     request = {
                         timeout { requestTimeoutMillis = HttpTimeout.INFINITE_TIMEOUT_MS }
+                        headers {
+                            this.append(HttpHeaders.Authorization, "Bearer $token")
+                        }
                     },
-                    path = "/room/$roomUid/user/$userUid"
+                    path = "/room/$roomUid"
                 ) {
                     for (frame in incoming) {
                         frame as? Frame.Text ?: continue
@@ -104,4 +124,25 @@ object ApiClient {
         webSocketClient?.close()
         webSocketClient = null
     }
+
+    private suspend inline fun <reified T> get(
+        path: String
+    ): T = client.get(path) {
+        println("##### append token - $token")
+            if (token.isNotEmpty()) {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+    }.body()
+
+    private suspend inline fun <reified T, reified B> post(
+        path: String,
+        body: B,
+    ): T = client.post(path) {
+        accept(ContentType.Application.Json)
+        contentType(ContentType.Application.Json)
+        if (token.isNotEmpty()) {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+        setBody(body)
+    }.body()
 }

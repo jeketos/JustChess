@@ -1,7 +1,7 @@
-package game.ui.auth.login
+package game.ui.auth.signUp
 
 import game.api.ApiClient
-import game.api.request.Credentials
+import game.api.request.SignUpData
 import game.api.response.Room
 import game.api.response.User
 import game.data.CasualState
@@ -11,17 +11,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 
-class LoginViewModel {
+class SignUpViewModel {
 
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
     val state = MutableSharedFlow<CasualState<Pair<Room, User>>>()
     val errorEvent = MutableSharedFlow<String>()
 
-    fun signIn(email: String, password: String) {
+    fun signUp(email: String, password: String, name: String) {
         scope.launch(Dispatchers.IO) {
             runCatching {
                 state.emit(CasualState.Loading)
-                val user = ApiClient.login(Credentials(email, password))
+                val user = ApiClient.signUp(SignUpData(email, password, name))
                 val room = ApiClient.findGame()
                 val roomId = room.uid
                 ApiClient.webSocketEvents(roomUid = roomId).collect {

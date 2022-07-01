@@ -25,15 +25,14 @@ class OnlineGameViewModel(
 
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
     private val gameController = GameController()
-    private val userColor = if (room.players.eagle?.uid == user.uid) GameColor.White else GameColor.Black
+    val userColor = if (room.players.eagle?.uid == user.uid) GameColor.White else GameColor.Black
     val gameState: StateFlow<GameState> = gameController.gameState
 
     init {
         gameController.setStateByRoom(room, user, userColor)
         scope.launch(Dispatchers.IO) {
             ApiClient.webSocketEvents(
-                roomUid = room.uid,
-                userUid = user.uid
+                roomUid = room.uid
             ).collect {
                 when (it) {
                     SocketEvents.Update -> {
@@ -52,7 +51,6 @@ class OnlineGameViewModel(
                     if (color != userColor && gameState.value.moveCount > 0) {
                         ApiClient.makeMove(
                             MoveRequest(
-                                userUid = user.uid,
                                 roomUid = room.uid,
                                 board = gameState.value.board.compressToString()
                             )
@@ -74,7 +72,7 @@ class OnlineGameViewModel(
 
     fun giveUp() {
         scope.launch {
-            val room = ApiClient.giveUp(user.uid)
+            val room = ApiClient.giveUp()
             //todo
         }
     }

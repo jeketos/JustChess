@@ -1,4 +1,4 @@
-package game.ui.auth.login
+package game.ui.auth.signUp
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.Box
@@ -17,11 +17,12 @@ import game.navigation.NavDestination
 import game.ui.components.LoadingButton
 
 @Composable
-fun Login(
+fun SignUp(
     navController: NavController,
-    viewModel: LoginViewModel
+    viewModel: SignUpViewModel
 ) {
     val viewState by viewModel.state.collectAsState(CasualState.Idle)
+    val name = remember { mutableStateOf("") }
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
@@ -36,6 +37,14 @@ fun Login(
         Column(
             modifier = Modifier.align(Alignment.Center)
         ) {
+            OutlinedTextField(
+                modifier = Modifier.padding(8.dp).align(Alignment.CenterHorizontally),
+                label = { Text("Name") },
+                value = name.value,
+                onValueChange = {
+                    name.value = it
+                }
+            )
             OutlinedTextField(
                 modifier = Modifier.padding(8.dp).align(Alignment.CenterHorizontally),
                 label = { Text("Email") },
@@ -55,10 +64,10 @@ fun Login(
             LoadingButton(
                 modifier = Modifier.padding(8.dp).align(Alignment.CenterHorizontally),
                 onClick = {
-                    viewModel.signIn(email.value, password.value)
+                    viewModel.signUp(email.value, password.value, name.value)
                 },
                 isLoading = viewState == CasualState.Loading,
-                text = "Sign in & find game"
+                text = "Sign up & find game"
             )
         }
     }
@@ -66,6 +75,6 @@ fun Login(
 
 @Preview
 @Composable
-fun LoginPreview() {
-    Login(NavController(NavDestination.Login), LoginViewModel())
+fun SignUpPreview() {
+    SignUp(NavController(NavDestination.SignUp), SignUpViewModel())
 }
